@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/DjebbZ/react-meetup-state-management.git"
+    "url": "git://github.com/DjebbZ/react-meetup-data-flow.git"
   },
   "keywords": [
     "react",
@@ -24,9 +24,9 @@
   "author": "Khalid Jebbari",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/DjebbZ/react-meetup-state-management/issues"
+    "url": "https://github.com/DjebbZ/react-meetup-data-flow/issues"
   },
-  "homepage": "https://github.com/DjebbZ/react-meetup-state-management",
+  "homepage": "https://github.com/DjebbZ/react-meetup-data-flow",
   "dependencies": {
     "react": "0.13.x"
   },
