@@ -73,7 +73,8 @@ class SearchBox extends React.Component {
         this.onChange = this.onChange.bind(this)
 
         this.propTypes = {
-            query: React.PropTypes.string.isRequired
+            query: React.PropTypes.string.isRequired,
+            onChange: React.PropTypes.func.isRequired
         }
     }
     render() {
