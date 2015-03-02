@@ -71,6 +71,10 @@ class SearchBox extends React.Component {
         super(props)
         // Binding "this" is necessary
         this.onChange = this.onChange.bind(this)
+
+        this.propTypes = {
+            query: React.PropTypes.string.isRequired
+        }
     }
     render() {
         return <input type="search" value={this.props.query} placeholder="Recherchez..." onChange={this.onChange} />
@@ -87,6 +91,18 @@ class SearchBox extends React.Component {
 /////////////////////////////
 
 class SearchResults extends React.Component {
+    constructor(props) {
+        super(props)
+
+        this.propTypes = {
+            results: React.PropTypes.arrayOf(
+                React.PropTypes.shape({
+                    name: React.PropTypes.string,
+                    birth: React.PropTypes.string
+                })
+            ).isRequired
+        }
+    }
     render() {
         return (
             <ul>
@@ -103,6 +119,16 @@ class SearchResults extends React.Component {
 ////////////////////////////////
 
 class SearchResultItem extends React.Component {
+    constructor(props) {
+        super(props)
+
+        this.propTypes = {
+            item: React.PropTypes.shape({
+                name: React.PropTypes.string,
+                birth: React.PropTypes.string
+            }).isRequired
+        }
+    }
     render() {
         var {name, birth} = this.props.item
         return <li>{name}, born in {birth}</li>
