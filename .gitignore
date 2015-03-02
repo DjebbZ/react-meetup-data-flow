@@ -26,3 +26,6 @@ node_modules
 
 # Users Environment Variables
 .lock-wscript
+
+# Don't commit build directory, but needs to create an empty file for have it for browserify
+dist/*.js

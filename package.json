@@ -1,0 +1,37 @@
+{
+  "name": "y",
+  "version": "0.0.0",
+  "description": "Repo for the talk at React.js meetup in Paris March 12th 2015",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "browserify src/index.js --transform reactify --transform babelify --outfile dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/DjebbZ/react-meetup-state-management.git"
+  },
+  "keywords": [
+    "react",
+    "reactjs",
+    "meetup",
+    "state",
+    "management",
+    "flow",
+    "data"
+  ],
+  "author": "Khalid Jebbari",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/DjebbZ/react-meetup-state-management/issues"
+  },
+  "homepage": "https://github.com/DjebbZ/react-meetup-state-management",
+  "dependencies": {
+    "react": "~0.12.2"
+  },
+  "devDependencies": {
+    "reactify": "~1.0.0",
+    "browserify": "~9.0.3",
+    "babelify": "~5.0.3"
+  }
+}
