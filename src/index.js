@@ -55,6 +55,10 @@ class SearchWrapper extends React.Component {
     changeHandler(e) {
         this.setState({query: e.target.value})
     }
+
+    shouldComponentUpdate(nextProps, nextState) {
+        return this.state.query !== nextState.query
+    }
 }
 
 
@@ -89,10 +93,6 @@ class Search extends React.Component {
                 <SearchResults results={results} />
             </div>
         )
-    }
-
-    shouldComponentUpdate(nextProps) {
-        return this.props.query !== nextProps.query || this.props.results.length !== nextProps.results.length
     }
 }
 
