@@ -55,6 +55,10 @@ class Search extends React.Component {
         )
     }
 
+    shouldComponentUpdate(nextProps, nextState) {
+        return this.state.query !== nextState.query
+    }
+
     changeHandler(query) {
         this.setState({query: query})
     }
