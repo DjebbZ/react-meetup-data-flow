@@ -19,12 +19,12 @@ var artists = [{
 
 
 
-///////////////////////////////////////////////////////////////
-// Main Search Component                                     //
-// Displays a search box and filters the results accordingly //
-///////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////
+// Main Search Component Wrapper               //
+// Wraps stateless component and handles logic //
+/////////////////////////////////////////////////
 
-class Search extends React.Component {
+class SearchWrapper extends React.Component {
     constructor(props) {
         super(props)
         this.state = {query: ""}
@@ -48,15 +48,51 @@ class Search extends React.Component {
         var results = this.props.list.filter((res) => res.name.indexOf(this.state.query) !== -1)
 
         return (
+            <Search query={this.state.query} onChange={this.changeHandler} results={results} />
+        )
+    }
+
+    changeHandler(e) {
+        this.setState({query: e.target.value})
+    }
+}
+
+
+
+///////////////////////////////////////////////////////////////
+// Main Search Component                                     //
+// Displays a search box and a filtered list of results      //
+///////////////////////////////////////////////////////////////
+
+class Search extends React.Component {
+    constructor(props) {
+        super(props)
+
+        // couldn't figure a way to put them statically
+        this.propTypes = {
+            results: React.PropTypes.arrayOf(
+                React.PropTypes.shape({
+                    name: React.PropTypes.string,
+                    birth: React.PropTypes.string
+                })
+            ).isRequired,
+            query: React.PropTypes.string.isRequired,
+            onChange: React.PropTypes.func.isRequired
+        }
+    }
+
+    render() {
+        var {query, onChange, results} = this.props
+        return (
             <div>
-                <SearchBox query={this.state.query} onChange={this.changeHandler} />
+                <SearchBox query={query} onChange={onChange} />
                 <SearchResults results={results} />
             </div>
         )
     }
 
-    changeHandler(query) {
-        this.setState({query: query})
+    shouldComponentUpdate(nextProps) {
+        return this.props.query !== nextProps.query || this.props.results.length !== nextProps.results.length
     }
 }
 
@@ -69,8 +105,6 @@ class Search extends React.Component {
 class SearchBox extends React.Component {
     constructor(props) {
         super(props)
-        // Binding "this" is necessary
-        this.onChange = this.onChange.bind(this)
 
         this.propTypes = {
             query: React.PropTypes.string.isRequired,
@@ -78,10 +112,7 @@ class SearchBox extends React.Component {
         }
     }
     render() {
-        return <input type="search" value={this.props.query} placeholder="Recherchez..." onChange={this.onChange} />
-    }
-    onChange(e) {
-        this.props.onChange(e.target.value)
+        return <input type="search" value={this.props.query} placeholder="Recherchez..." onChange={this.props.onChange} />
     }
 }
 
@@ -139,6 +170,6 @@ class SearchResultItem extends React.Component {
 
 
 React.render(
-    <Search list={artists} />,
+    <SearchWrapper list={artists} />,
     document.body
 )
