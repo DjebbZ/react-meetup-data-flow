@@ -20,6 +20,12 @@ If you want to hack around, there's a `watch` task that automatically recompiles
 Note that this repo is written using JSX and ES6 (ES2015) then transpiled to ES5 with Babel and Browserify.
 Feel free to use ES6 or node-style modules since Browserify supports both.
 
+## Branches
+
+Each style of data flow/state management strategy is in its own branch. Below are the branches name and a description of what's inside. To switch, run `git checkout [branch-name]`.
+
+* `base` : Base implementation, classical top-down/bottom-up flow.
+
 ## License
 
 The MIT License.
