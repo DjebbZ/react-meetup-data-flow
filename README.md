@@ -25,6 +25,7 @@ Feel free to use ES6 or node-style modules since Browserify supports both.
 Each style of data flow/state management strategy is in its own branch. Below are the branches name and a description of what's inside. To switch, run `git checkout [branch-name]`.
 
 * `base` : Base implementation, classical top-down/bottom-up flow.
+* `base-wrapper` : Same than `base` but with a stateful wrapper.
 
 ## License
 
