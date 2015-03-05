@@ -1,4 +1,5 @@
-import React from "react";
+import React from "react"
+import {EventEmitter} from "events"
 
 
 
@@ -19,6 +20,14 @@ var artists = [{
 
 
 
+///////////////////////////////////////////////////////
+// Communication between non parent-child components //
+///////////////////////////////////////////////////////
+
+var bus = new EventEmitter()
+
+
+
 /////////////////////////////////////////////////
 // Main Search Component Wrapper               //
 // Wraps stateless component and handles logic //
@@ -36,7 +45,8 @@ class SearchWrapper extends React.Component {
                     name: React.PropTypes.string,
                     birth: React.PropTypes.string
                 })
-            ).isRequired
+            ).isRequired,
+            bus: React.PropTypes.instanceOf(EventEmitter)
         }
 
         // Binding "this" is necessary
@@ -44,55 +54,20 @@ class SearchWrapper extends React.Component {
     }
 
     render() {
-        // naive search
-        var results = this.props.list.filter((res) => res.name.indexOf(this.state.query) !== -1)
-
         return (
-            <Search query={this.state.query} onChange={this.changeHandler} results={results} />
+            <SearchBox query={this.state.query} onChange={this.changeHandler} />
         )
+    }
+
+    filterResults() {
+        // naive search
+        return this.props.list.filter((res) => res.name.indexOf(this.state.query) !== -1)
     }
 
     changeHandler(e) {
-        this.setState({query: e.target.value})
-    }
-}
-
-
-
-///////////////////////////////////////////////////////////////
-// Main Search Component                                     //
-// Displays a search box and a filtered list of results      //
-///////////////////////////////////////////////////////////////
-
-class Search extends React.Component {
-    constructor(props) {
-        super(props)
-
-        // couldn't figure a way to put them statically
-        this.propTypes = {
-            results: React.PropTypes.arrayOf(
-                React.PropTypes.shape({
-                    name: React.PropTypes.string,
-                    birth: React.PropTypes.string
-                })
-            ).isRequired,
-            query: React.PropTypes.string.isRequired,
-            onChange: React.PropTypes.func.isRequired
-        }
-    }
-
-    render() {
-        var {query, onChange, results} = this.props
-        return (
-            <div>
-                <SearchBox query={query} onChange={onChange} />
-                <SearchResults results={results} />
-            </div>
-        )
-    }
-
-    shouldComponentUpdate(nextProps) {
-        return this.props.query !== nextProps.query || this.props.results.length !== nextProps.results.length
+        this.setState({query: e.target.value}, () => {
+            this.props.bus.emit("results", this.filterResults())
+        })
     }
 }
 
@@ -132,15 +107,29 @@ class SearchResults extends React.Component {
                     name: React.PropTypes.string,
                     birth: React.PropTypes.string
                 })
-            ).isRequired
+            ).isRequired,
+            bus: React.PropTypes.instanceOf(EventEmitter)
+        }
+
+        this.state = {
+            results: this.props.results
         }
     }
+
     render() {
         return (
             <ul>
-                {this.props.results.map((item) => <SearchResultItem key={item.name} item={item} />)}
+                {this.state.results.map((item) => <SearchResultItem key={item.name} item={item} />)}
             </ul>
         )
+    }
+
+    componentDidMount() {
+        if (typeof this.props.bus !== "undefined") {
+            this.props.bus.on("results", (results) => {
+                this.setState({results: results})
+            })
+        }
     }
 }
 
@@ -170,6 +159,11 @@ class SearchResultItem extends React.Component {
 
 
 React.render(
-    <SearchWrapper list={artists} />,
-    document.body
+    <SearchWrapper list={artists} bus={bus} />,
+    document.getElementById('search')
+)
+
+React.render(
+    <SearchResults results={artists} bus={bus} />,
+    document.getElementById('results')
 )
