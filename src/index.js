@@ -6,7 +6,7 @@ import assign from "object-assign"
 
 
 ///////////////////////////////////////////////////////
-// Flux Dispatcher                                        //
+// Flux Dispatcher                                   //
 // Create a singleton Dispatcher                     //
 // (should be in its own module, being lazy here...) //
 ///////////////////////////////////////////////////////
@@ -69,17 +69,13 @@ var Store = (() => {
 //////////////////
 
 var Actions = {
-    filter: (query) => AppDispatcher.dispatch({
-        action: "FILTER",
-        query: query
-    })
+    filter(query) {
+        AppDispatcher.dispatch({
+            actionType: "FILTER",
+            query: query
+        })
+    }
 }
-
-///////////////////////////////////////////////////////
-// Communication between non parent-child components //
-///////////////////////////////////////////////////////
-
-var bus = new EventEmitter()
 
 
 
