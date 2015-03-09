@@ -186,6 +186,12 @@ class SearchResultItem extends React.Component {
         var {name, birth} = this.props.item
         return <li>{name}, born in {birth}</li>
     }
+
+    shouldComponentUpdate(nextProps) {
+        var {name: nName, birth: nBirth} = nextProps.item,
+            {name, birth} = this.props.item
+        return name !== nName || birth !== nBirth
+    }
 }
 
 
