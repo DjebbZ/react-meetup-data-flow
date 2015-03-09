@@ -29,7 +29,8 @@
   "homepage": "https://github.com/DjebbZ/react-meetup-data-flow",
   "dependencies": {
     "react": "0.13.x",
-    "flux": "~2.0.1"
+    "flux": "~2.0.1",
+    "object-assign": "~2.0.0"
   },
   "devDependencies": {
     "reactify": "~1.0.0",

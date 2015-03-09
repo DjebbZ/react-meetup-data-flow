@@ -1,24 +1,79 @@
 import React from "react"
 import {EventEmitter} from "events"
+import {Dispatcher} from "flux"
+import assign from "object-assign"
 
 
 
-//////////////////////////////////
-// Data used in the application //
-//////////////////////////////////
+///////////////////////////////////////////////////////
+// Flux Dispatcher                                        //
+// Create a singleton Dispatcher                     //
+// (should be in its own module, being lazy here...) //
+///////////////////////////////////////////////////////
 
-var artists = [{
-    name: "Georges Brassens",
-    birth: "1921"
-}, {
-    name: "Jimi Hendrix",
-    birth: "1942"
-}, {
-    name: "Wolfgang Amadeus Mozart",
-    birth: "1756"
-}]
+var AppDispatcher = new Dispatcher();
 
 
+
+////////////////
+// Flux Store //
+////////////////
+
+var Store = (() => {
+    var originalArtists = [{
+        name: "Georges Brassens",
+        birth: "1921"
+    }, {
+        name: "Jimi Hendrix",
+        birth: "1942"
+    }, {
+        name: "Wolfgang Amadeus Mozart",
+        birth: "1756"
+    }]
+
+    var displayArtists = originalArtists // slice ?
+
+    function filter(query) {
+        displayArtists = originalArtists.filter((artist) => artist.name.indexOf(query) !== -1)
+    }
+
+    var Store = assign({}, EventEmitter.prototype, {
+
+        getArtists() { return displayArtists },
+
+        emitChange() { this.emit("filter") },
+
+        addFilterListener(callback) { this.on("filter", callback) },
+
+        removeFilterListener(callback) { this.removeListener("filter", callback) }
+    })
+
+    AppDispatcher.register((action) => {
+        switch(action.actionType) {
+            case "FILTER":
+                filter(action.query)
+                Store.emitChange()
+                break
+
+            default: break
+        }
+    })
+
+    return Store
+})()
+
+
+
+//////////////////
+// Flux Actions //
+//////////////////
+
+var Actions = {
+    filter: (query) => AppDispatcher.dispatch({
+        action: "FILTER",
+        query: query
+    })
+}
 
 ///////////////////////////////////////////////////////
 // Communication between non parent-child components //
@@ -36,18 +91,6 @@ var bus = new EventEmitter()
 class SearchWrapper extends React.Component {
     constructor(props) {
         super(props)
-        this.state = {query: ""}
-
-        // couldn't figure a way to put them statically
-        this.propTypes = {
-            list: React.PropTypes.arrayOf(
-                React.PropTypes.shape({
-                    name: React.PropTypes.string,
-                    birth: React.PropTypes.string
-                })
-            ).isRequired,
-            bus: React.PropTypes.instanceOf(EventEmitter)
-        }
 
         // Binding "this" is necessary
         this.changeHandler = this.changeHandler.bind(this)
@@ -55,19 +98,12 @@ class SearchWrapper extends React.Component {
 
     render() {
         return (
-            <SearchBox query={this.state.query} onChange={this.changeHandler} />
+            <SearchBox onChange={this.changeHandler} />
         )
     }
 
-    filterResults() {
-        // naive search
-        return this.props.list.filter((res) => res.name.indexOf(this.state.query) !== -1)
-    }
-
     changeHandler(e) {
-        this.setState({query: e.target.value}, () => {
-            this.props.bus.emit("results", this.filterResults())
-        })
+        Actions.filter(e.target.value)
     }
 }
 
@@ -82,12 +118,11 @@ class SearchBox extends React.Component {
         super(props)
 
         this.propTypes = {
-            query: React.PropTypes.string.isRequired,
             onChange: React.PropTypes.func.isRequired
         }
     }
     render() {
-        return <input type="search" value={this.props.query} placeholder="Recherchez..." onChange={this.props.onChange} />
+        return <input type="search" placeholder="Recherchez..." onChange={this.props.onChange} />
     }
 }
 
@@ -101,19 +136,10 @@ class SearchResults extends React.Component {
     constructor(props) {
         super(props)
 
-        this.propTypes = {
-            results: React.PropTypes.arrayOf(
-                React.PropTypes.shape({
-                    name: React.PropTypes.string,
-                    birth: React.PropTypes.string
-                })
-            ).isRequired,
-            bus: React.PropTypes.instanceOf(EventEmitter)
-        }
+        this.state = this.getState()
 
-        this.state = {
-            results: this.props.results
-        }
+        this.changeHandler = this.changeHandler.bind(this)
+        this.getState = this.getState.bind(this)
     }
 
     render() {
@@ -125,11 +151,21 @@ class SearchResults extends React.Component {
     }
 
     componentDidMount() {
-        if (typeof this.props.bus !== "undefined") {
-            this.props.bus.on("results", (results) => {
-                this.setState({results: results})
-            })
+        Store.addFilterListener(this.changeHandler)
+    }
+
+    componentWillUnmount() {
+        Store.removeFilterListener(this.changeHandler)
+    }
+
+    getState() {
+        return {
+            results: Store.getArtists()
         }
+    }
+
+    changeHandler() {
+        this.setState(this.getState())
     }
 }
 
@@ -159,11 +195,11 @@ class SearchResultItem extends React.Component {
 
 
 React.render(
-    <SearchWrapper list={artists} bus={bus} />,
+    <SearchWrapper />,
     document.getElementById('search')
 )
 
 React.render(
-    <SearchResults results={artists} bus={bus} />,
+    <SearchResults />,
     document.getElementById('results')
 )
