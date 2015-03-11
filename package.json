@@ -28,6 +28,7 @@
   },
   "homepage": "https://github.com/DjebbZ/react-meetup-data-flow",
   "dependencies": {
+    "kefir": "^1.1.0",
     "react": "0.13.x"
   },
   "devDependencies": {

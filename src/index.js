@@ -1,5 +1,5 @@
 import React from "react"
-import {EventEmitter} from "events"
+import Kefir from "kefir"
 
 
 
@@ -24,52 +24,15 @@ var artists = [{
 // Communication between non parent-child components //
 ///////////////////////////////////////////////////////
 
-var bus = new EventEmitter()
+var inputStream = Kefir.emitter()
 
-
-
-/////////////////////////////////////////////////
-// Main Search Component Wrapper               //
-// Wraps stateless component and handles logic //
-/////////////////////////////////////////////////
-
-class SearchWrapper extends React.Component {
-    constructor(props) {
-        super(props)
-        this.state = {query: ""}
-
-        // couldn't figure a way to put them statically
-        this.propTypes = {
-            list: React.PropTypes.arrayOf(
-                React.PropTypes.shape({
-                    name: React.PropTypes.string,
-                    birth: React.PropTypes.string
-                })
-            ).isRequired,
-            bus: React.PropTypes.instanceOf(EventEmitter)
-        }
-
-        // Binding "this" is necessary
-        this.changeHandler = this.changeHandler.bind(this)
-    }
-
-    render() {
-        return (
-            <SearchBox query={this.state.query} onChange={this.changeHandler} />
-        )
-    }
-
-    filterResults() {
-        // naive search
-        return this.props.list.filter((res) => res.name.indexOf(this.state.query) !== -1)
-    }
-
-    changeHandler(e) {
-        this.setState({query: e.target.value}, () => {
-            this.props.bus.emit("results", this.filterResults())
-        })
-    }
-}
+var resultsStream = inputStream
+                        .map(e => e.target.value)
+                        .skipDuplicates()
+                        .map(v => {
+                            return artists.filter(artist => artist.name.indexOf(v) !== -1)
+                        })
+                        .toProperty(artists)
 
 
 
@@ -81,13 +44,15 @@ class SearchBox extends React.Component {
     constructor(props) {
         super(props)
 
+        // couldn't figure a way to put them statically
         this.propTypes = {
-            query: React.PropTypes.string.isRequired,
-            onChange: React.PropTypes.func.isRequired
+            inputStream: React.PropTypes.instanceOf(Kefir.Emitter)
         }
     }
     render() {
-        return <input type="search" value={this.props.query} placeholder="Recherchez..." onChange={this.props.onChange} />
+        return <input type="search"
+                      placeholder="Recherchez..."
+                      onChange={e => this.props.inputStream.emit(e)} />
     }
 }
 
@@ -102,34 +67,20 @@ class SearchResults extends React.Component {
         super(props)
 
         this.propTypes = {
-            results: React.PropTypes.arrayOf(
-                React.PropTypes.shape({
-                    name: React.PropTypes.string,
-                    birth: React.PropTypes.string
-                })
-            ).isRequired,
-            bus: React.PropTypes.instanceOf(EventEmitter)
-        }
-
-        this.state = {
-            results: this.props.results
+            resultsStream: React.PropTypes.instanceOf(Kefir.Emitter)
         }
     }
 
     render() {
         return (
             <ul>
-                {this.state.results.map((item) => <SearchResultItem key={item.name} item={item} />)}
+                {this.state.results.map(item => <SearchResultItem key={item.name} item={item} />)}
             </ul>
         )
     }
 
-    componentDidMount() {
-        if (typeof this.props.bus !== "undefined") {
-            this.props.bus.on("results", (results) => {
-                this.setState({results: results})
-            })
-        }
+    componentWillMount() {
+        this.props.resultsStream.onValue(results => this.setState({results: results}))
     }
 }
 
@@ -159,11 +110,11 @@ class SearchResultItem extends React.Component {
 
 
 React.render(
-    <SearchWrapper list={artists} bus={bus} />,
+    <SearchBox inputStream={inputStream} />,
     document.getElementById('search')
 )
 
 React.render(
-    <SearchResults results={artists} bus={bus} />,
+    <SearchResults resultsStream={resultsStream} />,
     document.getElementById('results')
 )
