@@ -29,6 +29,7 @@ Each style of data flow/state management strategy is in its own branch. Below ar
 * `events` : Split the components and communicate with events (here Node events)
 * `flux` : Split the components and communicate with Flux (Facebook's Flux)
 * `frp` : Split the components and communicate with "FRP" streams (kefir.js, à la RxJS)
+* `csp` : Use csp/channels to communicate between components
 
 ## License
 
