@@ -28,7 +28,10 @@
   },
   "homepage": "https://github.com/DjebbZ/react-meetup-data-flow",
   "dependencies": {
-    "react": "0.13.x"
+    "babel": "^5.2.16",
+    "js-csp": "^0.4.1",
+    "react": "0.13.x",
+    "transducers.js": "^0.3.2"
   },
   "devDependencies": {
     "reactify": "~1.0.0",

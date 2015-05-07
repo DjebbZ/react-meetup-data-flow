@@ -1,5 +1,7 @@
-import React from "react"
-import {EventEmitter} from "events"
+import React, {PropTypes} from "react"
+import csp from "js-csp"
+import {map, compose} from "transducers.js"
+import "babel/polyfill"
 
 
 
@@ -20,11 +22,27 @@ var artists = [{
 
 
 
-///////////////////////////////////////////////////////
-// Communication between non parent-child components //
-///////////////////////////////////////////////////////
+///////////////////////////////////////
+// Channel used to communicate input //
+///////////////////////////////////////
 
-var bus = new EventEmitter()
+// Individual operations as functions
+
+function filterArtists(search) {
+    // naive search
+    return artists.filter((res) => res.name.indexOf(search) !== -1)
+}
+
+var eventToValue = map(e => e.target.value)
+var trim = map(s => s.trim())
+var searchToResults = map(s => filterArtists(s))
+
+// Let's compose these operations
+var searchArtists = compose(eventToValue, trim, searchToResults)
+
+// Create a channel that automatically transfers search results
+var chan = csp.chan(1, searchArtists, err => console.error("Transformation not OK", err))
+
 
 
 
@@ -36,17 +54,11 @@ var bus = new EventEmitter()
 class SearchWrapper extends React.Component {
     constructor(props) {
         super(props)
-        this.state = {query: ""}
 
         // couldn't figure a way to put them statically
         this.propTypes = {
-            list: React.PropTypes.arrayOf(
-                React.PropTypes.shape({
-                    name: React.PropTypes.string,
-                    birth: React.PropTypes.string
-                })
-            ).isRequired,
-            bus: React.PropTypes.instanceOf(EventEmitter)
+            // didn't find the type of a channel :/
+            chan: PropTypes.instanceOf(Object)
         }
 
         // Binding "this" is necessary
@@ -55,18 +67,17 @@ class SearchWrapper extends React.Component {
 
     render() {
         return (
-            <SearchBox query={this.state.query} onChange={this.changeHandler} />
+            <SearchBox onChange={this.changeHandler} />
         )
     }
 
-    filterResults() {
-        // naive search
-        return this.props.list.filter((res) => res.name.indexOf(this.state.query) !== -1)
-    }
 
     changeHandler(e) {
-        this.setState({query: e.target.value}, () => {
-            this.props.bus.emit("results", this.filterResults())
+        var _this = this;
+        csp.go(function* () {
+            console.log("Going to put event")
+            yield csp.put(_this.props.chan, e)
+            console.log("Put done !")
         })
     }
 }
@@ -82,12 +93,11 @@ class SearchBox extends React.Component {
         super(props)
 
         this.propTypes = {
-            query: React.PropTypes.string.isRequired,
-            onChange: React.PropTypes.func.isRequired
+            onChange: PropTypes.func.isRequired
         }
     }
     render() {
-        return <input type="search" value={this.props.query} placeholder="Recherchez..." onChange={this.props.onChange} />
+        return <input type="search" placeholder="Recherchez..." onChange={this.props.onChange} />
     }
 }
 
@@ -102,13 +112,13 @@ class SearchResults extends React.Component {
         super(props)
 
         this.propTypes = {
-            results: React.PropTypes.arrayOf(
-                React.PropTypes.shape({
-                    name: React.PropTypes.string,
-                    birth: React.PropTypes.string
+            results: PropTypes.arrayOf(
+                PropTypes.shape({
+                    name: PropTypes.string,
+                    birth: PropTypes.string
                 })
             ).isRequired,
-            bus: React.PropTypes.instanceOf(EventEmitter)
+            chan: PropTypes.instanceOf(Object)
         }
 
         this.state = {
@@ -125,11 +135,15 @@ class SearchResults extends React.Component {
     }
 
     componentDidMount() {
-        if (typeof this.props.bus !== "undefined") {
-            this.props.bus.on("results", (results) => {
-                this.setState({results: results})
-            })
-        }
+        var _this = this;
+        csp.go(function* () {
+            while (true) {
+                console.log("entering go routine")
+                var results = yield csp.take(_this.props.chan)
+                console.log("took from chan", results)
+                _this.setState({results: results})
+            }
+        })
     }
 }
 
@@ -144,9 +158,9 @@ class SearchResultItem extends React.Component {
         super(props)
 
         this.propTypes = {
-            item: React.PropTypes.shape({
-                name: React.PropTypes.string,
-                birth: React.PropTypes.string
+            item: PropTypes.shape({
+                name: PropTypes.string,
+                birth: PropTypes.string
             }).isRequired
         }
     }
@@ -159,11 +173,11 @@ class SearchResultItem extends React.Component {
 
 
 React.render(
-    <SearchWrapper list={artists} bus={bus} />,
+    <SearchWrapper list={artists} chan={chan} />,
     document.getElementById('search')
 )
 
 React.render(
-    <SearchResults results={artists} bus={bus} />,
+    <SearchResults results={artists} chan={chan}/>,
     document.getElementById('results')
 )
