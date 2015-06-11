@@ -30,6 +30,7 @@ Each style of data flow/state management strategy is in its own branch. Below ar
 * `flux` : Split the components and communicate with Flux (Facebook's Flux)
 * `frp` : Split the components and communicate with "FRP" streams (kefir.js, à la RxJS)
 * `csp` : Use csp/channels to communicate between components
+* `immutability` : use Omniscient.js to show immutability, cursors and other related stuff
 
 ## License
 
