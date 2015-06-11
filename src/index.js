@@ -173,7 +173,7 @@ class SearchResultItem extends React.Component {
 
 
 React.render(
-    <SearchWrapper list={artists} chan={chan} />,
+    <SearchWrapper chan={chan} />,
     document.getElementById('search')
 )
 
