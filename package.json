@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "browserify src/index.js --transform reactify --transform babelify --outfile dist/index.js",
-    "watch": "watchify   src/index.js --transform reactify --transform babelify --outfile dist/index.js"
+    "build": "browserify src/index.js --transform babelify --outfile dist/index.js",
+    "watch": "watchify   src/index.js --transform babelify --outfile dist/index.js"
   },
   "repository": {
     "type": "git",
@@ -28,10 +28,11 @@
   },
   "homepage": "https://github.com/DjebbZ/react-meetup-data-flow",
   "dependencies": {
+    "immstruct": "^1.4.1",
+    "omniscient": "^3.1.0",
     "react": "0.13.x"
   },
   "devDependencies": {
-    "reactify": "~1.0.0",
     "browserify": "~9.0.3",
     "babelify": "~5.0.3",
     "watchify": "~2.4.0"
