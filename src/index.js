@@ -1,169 +1,138 @@
 import React from "react"
-import {EventEmitter} from "events"
+import immstruct from "immstruct"
+import component from "omniscient"
 
 
 
-//////////////////////////////////
-// Data used in the application //
-//////////////////////////////////
-
-var artists = [{
-    name: "Georges Brassens",
-    birth: "1921"
-}, {
-    name: "Jimi Hendrix",
-    birth: "1942"
-}, {
-    name: "Wolfgang Amadeus Mozart",
-    birth: "1756"
-}]
+// omniscient returns its own Component object by default instead of a React.Element,
+// with a JSX version accessible at Component.jsx
+// Defaulting to JSX so that we write normal JSX code
+component = component.withDefaults({ jsx: true })
 
 
 
-///////////////////////////////////////////////////////
-// Communication between non parent-child components //
-///////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+// Data used in the application                                     //
+// Looks like normal JS data, but is immutable and provides cursors //
+//////////////////////////////////////////////////////////////////////
 
-var bus = new EventEmitter()
+var data = immstruct({
+    search: "",
+    artists: [{
+        name: "Georges Brassens",
+        birth: "1921"
+    }, {
+        name: "Jimi Hendrix",
+        birth: "1942"
+    }, {
+        name: "Wolfgang Amadeus Mozart",
+        birth: "1756"
+    }]
+})
 
 
 
-/////////////////////////////////////////////////
-// Main Search Component Wrapper               //
-// Wraps stateless component and handles logic //
-/////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+// Smart wrapper that does all the cursor related manipulation             //
+// Updating the cursor is like updating the global data structure directly //
+/////////////////////////////////////////////////////////////////////////////
 
-class SearchWrapper extends React.Component {
-    constructor(props) {
-        super(props)
-        this.state = {query: ""}
+var SearchBoxWrapper = component("SearchBoxWrapper", ({cursor}) => {
+    console.log("rendering SearchBoxWrapper")
 
-        // couldn't figure a way to put them statically
-        this.propTypes = {
-            list: React.PropTypes.arrayOf(
-                React.PropTypes.shape({
-                    name: React.PropTypes.string,
-                    birth: React.PropTypes.string
-                })
-            ).isRequired,
-            bus: React.PropTypes.instanceOf(EventEmitter)
-        }
-
-        // Binding "this" is necessary
-        this.changeHandler = this.changeHandler.bind(this)
+    function changeHandler(e) {
+        console.log("Input changed !")
+        cursor.update( _ => e.target.value)
     }
 
-    render() {
+    return <SearchBox search={cursor.deref()} changeHandler={changeHandler} />
+})
+
+
+
+////////////////////////////////////////////////////////////////////////////////////
+// Dumb Component (displays props and handle events via parent's handlers)        //
+// Notice that we can use a normal React component inside an Omniscient component //
+////////////////////////////////////////////////////////////////////////////////////
+
+var SearchBox = React.createClass({
+    render: function() {
+        console.log("rendering SearchBox")
+
+        var {search, changeHandler} = this.props
+
         return (
-            <SearchBox query={this.state.query} onChange={this.changeHandler} />
+            <input type="search" value={search} placeholder="Recherchez..."
+               onChange={changeHandler} />
         )
     }
+})
 
-    filterResults() {
-        // naive search
-        return this.props.list.filter((res) => res.name.indexOf(this.state.query) !== -1)
-    }
 
-    changeHandler(e) {
-        this.setState({query: e.target.value}, () => {
-            this.props.bus.emit("results", this.filterResults())
-        })
-    }
+
+//////////////////////////////////////////////////////////////
+// Smart wrapper that retrieves and filter the artists list //
+//////////////////////////////////////////////////////////////
+
+var SearchResultsWrapper = component("SearchResultsWrapper", ({cursor}) => {
+    console.log("rendering SearchResultsWrapper")
+
+    // Retrieve search input
+    var search = cursor.get("search")
+
+    // Filter artists
+    // The immstruct data structure holds Immutable.js data structure,
+    // so we need to use its API to get the data
+    var results = cursor.get("artists").filter( artist => {
+        return artist.get("name").indexOf(search) !== -1
+    }).toJS()
+
+    return (
+        <SearchResults results={results} />
+    )
+})
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// Dumb Component too                                                                     //
+// Written using Omniscient API instead of raw React, just to demonstrate the possibility //
+////////////////////////////////////////////////////////////////////////////////////////////
+
+var SearchResults = component("SearchResults", ({results}) => {
+    console.log("rendering SearchResults")
+
+    return (
+        <ul>
+            {results.map( item => {
+                var {name, birth} = item
+                return <li key={name}>{name}, born in {birth}</li>
+            })}
+        </ul>
+    )
+})
+
+
+
+////////////////////////////////////////////////////////////////
+// "Render loop" : re-render the entire app when data changes //
+////////////////////////////////////////////////////////////////
+
+function render() {
+    React.render(
+        <SearchBoxWrapper cursor={data.cursor("search")} />,
+        document.getElementById('search')
+    )
+
+    React.render(
+        <SearchResultsWrapper cursor={data.cursor()} />,
+        document.getElementById('results')
+    )
 }
 
+render()
 
-
-/////////////////////////
-// SearchBox Component //
-/////////////////////////
-
-class SearchBox extends React.Component {
-    constructor(props) {
-        super(props)
-
-        this.propTypes = {
-            query: React.PropTypes.string.isRequired,
-            onChange: React.PropTypes.func.isRequired
-        }
-    }
-    render() {
-        return <input type="search" value={this.props.query} placeholder="Recherchez..." onChange={this.props.onChange} />
-    }
-}
-
-
-
-/////////////////////////////
-// SearchResults Component //
-/////////////////////////////
-
-class SearchResults extends React.Component {
-    constructor(props) {
-        super(props)
-
-        this.propTypes = {
-            results: React.PropTypes.arrayOf(
-                React.PropTypes.shape({
-                    name: React.PropTypes.string,
-                    birth: React.PropTypes.string
-                })
-            ).isRequired,
-            bus: React.PropTypes.instanceOf(EventEmitter)
-        }
-
-        this.state = {
-            results: this.props.results
-        }
-    }
-
-    render() {
-        return (
-            <ul>
-                {this.state.results.map((item) => <SearchResultItem key={item.name} item={item} />)}
-            </ul>
-        )
-    }
-
-    componentDidMount() {
-        if (typeof this.props.bus !== "undefined") {
-            this.props.bus.on("results", (results) => {
-                this.setState({results: results})
-            })
-        }
-    }
-}
-
-
-
-////////////////////////////////
-// SearchResultItem Component //
-////////////////////////////////
-
-class SearchResultItem extends React.Component {
-    constructor(props) {
-        super(props)
-
-        this.propTypes = {
-            item: React.PropTypes.shape({
-                name: React.PropTypes.string,
-                birth: React.PropTypes.string
-            }).isRequired
-        }
-    }
-    render() {
-        var {name, birth} = this.props.item
-        return <li>{name}, born in {birth}</li>
-    }
-}
-
-
-
-React.render(
-    <SearchWrapper list={artists} bus={bus} />,
-    document.getElementById('search')
-)
-
-React.render(
-    <SearchResults results={artists} bus={bus} />,
-    document.getElementById('results')
-)
+data.on("swap", () => {
+    console.log("data changed !")
+    render()
+})
